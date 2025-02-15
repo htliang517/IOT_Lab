@@ -1,0 +1,15 @@
+object_detection:
+  model: 'efficientdet_lite0.tflite'
+  cameraID: 0             # 0 for default camera
+  frameWidth: 640         # Default 640
+  frameHeight: 480        # Default 480
+  numThreads: 4           # Default 4
+  enableEdgeTPU: False    # Default False
+
+mapping:
+  mapSize: 100             # Default 100
+
+control:
+  pwm: 5                    # Default 5
+  stepTime_turn45: 0.9     # Seconds to turn 45 degrees
+  stepTime_straight: 1.0   # Seconds to move forward

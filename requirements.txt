@@ -1,0 +1,11 @@
+# Basic libraries
+numpy
+
+# Object detection
+pyyaml
+tflite-support
+picamera2
+
+# Mapping
+scipy
+matplotlib
