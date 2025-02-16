@@ -25,7 +25,7 @@ if __name__ == "__main__":
         '--goal', 
         help='Goal position of the car. List of 2 integers: [x, y]',
         required=False,
-        default=[100, 0],
+        default=[[100, 0], [200,0]],
         type=parse_list)
     args = parser.parse_args()
 
