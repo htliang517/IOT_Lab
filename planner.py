@@ -30,6 +30,10 @@ def a_star(map, start, end):
         for row in range(rows)
     ]
     start_node = grid[start[0]][start[1]]
+    # ~ print("@@@@@", end, len(end))
+    # ~ print("@@@@@", grid[0][0], grid[100][0])
+    # ~ print("@@@@@", end[0], end[1])
+    
     end_node = grid[end[0]][end[1]]
 
     start_node.g = 0
@@ -37,13 +41,13 @@ def a_star(map, start, end):
 
     heapq.heappush(open, start_node)
 
-    # print(grid)
+    # ~ print("@@@@@ grid", grid)
 
     while open:
         current = heapq.heappop(open)
         if (current.row, current.col) in closed:
             continue
-
+        # ~ print("aaa")
         if current.row == end_node.row and current.col == end_node.col:
             path = []
             while current:
@@ -51,8 +55,10 @@ def a_star(map, start, end):
                 current = current.prev
             path.reverse()
             return path
+        # ~ print("bbb")
 
         closed.add((current.row, current.col))
+        # ~ print("ccc")
 
         for rr, cc in [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (-1, -1), (1, -1), (-1, 1)]:
             new_row = current.row + rr
@@ -60,16 +66,17 @@ def a_star(map, start, end):
 
             if new_row < 0 or new_row >= rows or new_col < 0 or new_col >= cols:
                 continue
-
+            # ~ print("ddd")
             adj = grid[new_row][new_col]
             if adj.obstacle or ((adj.row, adj.col) in closed):
                 continue
-
+            # ~ print("eee")
             if (current.g + 1) < adj.g:
                 adj.prev = current
                 adj.g = current.g + 1
                 adj.h = h_value(adj, end_node)
                 heapq.heappush(open, adj)
+            # ~ print("fff")
 
     return []
 

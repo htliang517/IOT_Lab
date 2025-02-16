@@ -42,8 +42,8 @@ def visualize(
     """
     
     json_dict ={
-        "stop sign": False,
-        "person": False
+        "stop sign": False
+        # ~ "person": False
     }
     
     

@@ -4,6 +4,7 @@ import time
 import picar_4wd as fc
 from scipy.ndimage import binary_dilation
 import matplotlib.pyplot as plt
+import datetime
 
 
 # Map Size
@@ -13,7 +14,7 @@ with open('config.yaml', 'r') as file:
         config = yaml.safe_load(file)
     except Exception as e:
         print(f"Error with loading config.yaml: {e}")
-MAP_SIZE = config['mapping']['map_size']
+MAP_SIZE = config['mapping']['mapSize']
 # [Option2] Hardcoded
 # MAP_SIZE = 100
 
@@ -22,7 +23,7 @@ map_grid = np.zeros((MAP_SIZE, MAP_SIZE), dtype=np.uint8)
 prev_map_grid = np.zeros((MAP_SIZE, MAP_SIZE), dtype=np.uint8)
 
 # initialize car state, theta is the current angle of the car
-vehicle_x, vehicle_y, vehicle_theta = 50, 0, 0
+# ~ vehicle_x, vehicle_y, vehicle_theta = 50, 0, 0
 # vehicle_x, vehicle_y = 50, 0
 
 # (-60 sensor is facing right)
@@ -35,7 +36,7 @@ def get_distance_median(angle, num_samples=5):
         distance = fc.get_distance_at(angle)
         if 0 < distance < 100:  
             distances.append(distance)
-        # time.sleep(0.05)  
+        time.sleep(0.01)  
     
     return np.median(distances) if distances else None  
 
@@ -43,8 +44,8 @@ def get_distance_median(angle, num_samples=5):
 def offsetXY(distance, vehicleX, vehicleY, vehicle_theta, angle):  
     total_angle_rad = math.radians(vehicle_theta + angle)
 
-    obs_x = int(vehicleX - distance * math.sin(total_angle_rad))  
-    obs_y = int(vehicleY + distance * math.cos(total_angle_rad))  
+    obs_x = int(vehicleX - distance/11.4 * math.sin(total_angle_rad))  
+    obs_y = int(vehicleY - distance/11.4 * math.cos(total_angle_rad))  
 
     return obs_x, obs_y
 
@@ -62,9 +63,9 @@ def scan_obstacles(vehicle_x, vehicle_y, vehicle_theta):
             obs_x, obs_y = offsetXY(distance, vehicle_x, vehicle_y, vehicle_theta, angle)  
             print(f"Angle: {angle}, Distance: {distance}, Obstacle: ({obs_x}, {obs_y})")
         
-            if 0 <= obs_x < MAP_SIZE and 0 <= obs_y < MAP_SIZE:  # < 100, region of the map
+            if 0 <= obs_x < MAP_SIZE and 0 <= obs_y < MAP_SIZE and distance < 50:  # < 100, region of the map
                 map_grid[obs_x, obs_y] = 1  # mark as 1
-                obstacle_positions.append((obs_x, obs_y))
+                obstacle_positions.append((obs_y, obs_x))
         else:
             print(f"Angle: {angle}, Distance: None (Measurement Error)")
     return obstacle_positions
@@ -130,7 +131,7 @@ def update_map(curr_map_grid, vehicle_x, vehicle_y, vehicle_theta):
 
     obstacle_positions = scan_obstacles(vehicle_x, vehicle_y, vehicle_theta)  # scan
     connect_obstacles(map_grid, obstacle_positions, vehicle_x, vehicle_y, angle_threshold=10, max_distance=10)  # connect
-    # map_grid = expand_obstacles(map_grid, radius=1)  # expand region
+    map_grid = expand_obstacles(map_grid, radius=3)  # expand region
     
     #===== New Added =====
     # Combine two maps using element-wise OR
@@ -139,15 +140,29 @@ def update_map(curr_map_grid, vehicle_x, vehicle_y, vehicle_theta):
     prev_map_grid = map_grid
     map_grid = tmp_combined_map
     # ====================
+
+    # ~ np.save("obstacle_map.npy", map_grid)
+    # 現在の日時を取得し、フォーマットを設定（例: obstacle_map_20250215_123456.npy）
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"obstacle_map_{timestamp}.csv"
+
+    # np.save を使ってファイルに保存
+    np.savetxt(filename, map_grid, delimiter=",", fmt="%d")
+
+    print("Map saved as 'obstacle_map.npy' and 'obstacle_map.png'")
+
+
     return map_grid
 
 # TEST
 def test():
+    vehicle_x, vehicle_y, vehicle_theta = 50, 0, 0
     obstacle_positions = scan_obstacles(vehicle_x, vehicle_y, vehicle_theta)  #first scan
     connect_obstacles(map_grid, obstacle_positions, vehicle_x, vehicle_y, angle_threshold=10, max_distance=10)  # interpolate
-    # # map_grid = expand_obstacles(map_grid, radius=0)  # expand region
+    map_grid = expand_obstacles(map_grid, radius=2)  # expand region
+    print(map_grid)
     # # print_map(map_grid)  # terminal
-
+    
     np.save("obstacle_map.npy", map_grid)
 
     # Flip upside down, then rotate 90°

@@ -23,9 +23,10 @@ from tflite_support.task import vision
 import object_detection_utils as utils
 
 from picamera2 import Picamera2
+from libcamera import Transform
 import yaml
 
-def detect(stop_needed: bool, model: str, camera_id: int, width: int, height: int, num_threads: int,
+def detect(stop_needed, model: str, camera_id: int, width: int, height: int, num_threads: int,
         enable_edgetpu: bool) -> None:
     """Continuously run inference on images acquired from the camera.
 
@@ -65,13 +66,21 @@ def detect(stop_needed: bool, model: str, camera_id: int, width: int, height: in
     detector = vision.ObjectDetector.create_from_options(options)
 
 
-    # Picameraを起動
+    # ~ # Picameraを起動
+    # ~ camera = Picamera2()
+    # ~ camera.configure(camera.create_preview_configuration(main={
+    # ~ "format": 'XRGB8888',
+    # ~ "size": (640, 480)
+    # ~ }))
+    # ~ camera.start()
     camera = Picamera2()
-    camera.configure(camera.create_preview_configuration(main={
-    "format": 'XRGB8888',
-    "size": (640, 480)
-    }))
+    prevW = 640
+    prevH = 480
+    fullReso = camera.camera_properties['PixelArraySize']
+    conf = camera.create_preview_configuration( main = { "format" : 'XRGB8888',"size" : ( prevW, prevH ) }, raw={ "size" : fullReso }, transform=Transform(vflip=True))
+    camera.configure( conf )
     camera.start()
+
 
     # Continuously capture images from the camera and run inference
     while True:
@@ -101,25 +110,26 @@ def detect(stop_needed: bool, model: str, camera_id: int, width: int, height: in
         image, result_dict = utils.visualize(image, detection_result, visualization=False)
         
         ########## This part is commented out since we don't need to visualize on Rpi ##########
-        # # Calculate the FPS
-        # if counter % fps_avg_frame_count == 0:
-        #     end_time = time.time()
-        #     fps = fps_avg_frame_count / (end_time - start_time)
-        #     start_time = time.time()
+        # ~ # Calculate the FPS
+        # ~ if counter % fps_avg_frame_count == 0:
+            # ~ end_time = time.time()
+            # ~ fps = fps_avg_frame_count / (end_time - start_time)
+            # ~ start_time = time.time()
 
-        # # Show the FPS
-        # fps_text = 'FPS = {:.1f}'.format(fps)
-        # text_location = (left_margin, row_size)
-        # cv2.putText(image, fps_text, text_location, cv2.FONT_HERSHEY_PLAIN,
-        #             font_size, text_color, font_thickness)
+        # ~ # Show the FPS
+        # ~ fps_text = 'FPS = {:.1f}'.format(fps)
+        # ~ text_location = (left_margin, row_size)
+        # ~ cv2.putText(image, fps_text, text_location, cv2.FONT_HERSHEY_PLAIN,
+                    # ~ font_size, text_color, font_thickness)
         ########################################################################################
 
         # Check if any object is detected and update the stop_needed signal
         all_false = all(value is False for value in result_dict.values())
+
         stop_needed.value = not all_false
         if stop_needed.value:
             print("Stop needed! Sleep for 10 seconds.")
-            time.sleep(10)
+            time.sleep(1000)
             stop_needed.value = False
             time.sleep(10)      # Wait for the car to move so that obstacle disappears
 
@@ -128,15 +138,15 @@ def detect(stop_needed: bool, model: str, camera_id: int, width: int, height: in
             break
 
         ########## This part is commented out since we don't need to visualize on Rpi ##########
-        # cv2.imshow('object_detector', image)
+        # ~ cv2.imshow('object_detector', image)
         ########################################################################################
         
         # cap.release()
-        cv2.destroyAllWindows()
+        # ~ cv2.destroyAllWindows()
 
   
 
-def run(stop_needed: bool) -> None:
+def run(stop_needed) -> None:
     with open('config.yaml', 'r') as file:
         try:
             config = yaml.safe_load(file)
@@ -167,5 +177,5 @@ def run(stop_needed: bool) -> None:
     detect(stop_needed, model, camera_id, frame_width, frame_height, num_threads, enable_edge_tpu)
 
 
-# if __name__ == '__main__':
-#     run()
+if __name__ == '__main__':
+    run(False)

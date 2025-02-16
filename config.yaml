@@ -7,9 +7,9 @@ object_detection:
   enableEdgeTPU: False    # Default False
 
 mapping:
-  mapSize: 100             # Default 100
+  mapSize: 25             # Default 100
 
 control:
   pwm: 5                    # Default 5
-  stepTime_turn45: 0.9     # Seconds to turn 45 degrees
-  stepTime_straight: 1.0   # Seconds to move forward
+  stepTime_turn45: 0.925     # Seconds to turn 45 degrees
+  stepTime_forward: 0.43   # Seconds to move forward

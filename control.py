@@ -28,7 +28,7 @@ if step_time_forward is None:
 def encounter_obstacle():
     # Scan the obstacles
     obstacle_distance = mapping.get_distance_median(angle=0, num_samples=5)
-    if obstacle_distance is not None and obstacle_distance < 10:
+    if obstacle_distance is not None and obstacle_distance < 40:
         return True
     return False
 
@@ -74,7 +74,7 @@ def drive_right(angle, pwm , step_time):
     fc.turn_right(pwm)
     time.sleep(operating_time)
     fc.stop()
-    time.sleep(0.1)
+    time.sleep(0.5)
 
 def drive_left(angle, pwm, step_time):
     """
@@ -87,12 +87,12 @@ def drive_left(angle, pwm, step_time):
     time.sleep(0.05)
 
     cycle = int(angle / 45)
-    operating_time = cycle * step_time
+    operating_time = cycle * step_time + 0.4
     
     fc.turn_left(pwm)
     time.sleep(operating_time)
     fc.stop()
-    time.sleep(0.1)
+    time.sleep(0.5)
 # ===================================
 
 # ========== Control Logic ==========
@@ -111,22 +111,29 @@ def navigate_to_waypoint(state, next_position):
     target_x, target_y = next_position
 
     # Compute the desired heading
-    desired_heading = math.atan2(target_y - y, target_x - x)
-
+    print("target, current", next_position, state)
+    desired_heading = math.degrees(-math.atan2(target_x - x, y - target_y))
+    print("Desired >>>> ",desired_heading)
     # Compute the steering angle (difference between desired and current heading)
     steering_angle = desired_heading - curr_angle
-
+    
     # Normalize steering angle to be within [-pi, pi]
-    steering_angle = (steering_angle + math.pi) % (2 * math.pi) - math.pi
+    steering_angle = (steering_angle + 180) % (2 * 180) - 180
+
+    print("@@@@@ #####", state, next_position)
+    print("@@@@@ #####", steering_angle)
 
     if steering_angle > 0:
-        drive_right(steering_angle, pwm, step_time_turn45)
+        drive_left(steering_angle, pwm, step_time_turn45)
         drive_forward(pwm, step_time_forward)
+        print("aaa")
     elif steering_angle < 0:
-        drive_left(abs(steering_angle), pwm, step_time_turn45)
+        drive_right(abs(steering_angle), pwm, step_time_turn45)
         drive_forward(pwm, step_time_forward)
+        print("bbb")
     else:
         drive_forward(pwm, step_time_forward)
+        print("ccc")
     
     curr_angle += steering_angle
     curr_position = next_position
@@ -150,13 +157,17 @@ def run(stop_needed, start_state, goal_state):
         # If path is empty, we have reached the goal
         if not path:
             print("Reached the goal!")
+            fc.stop()
             break
 
         # Check Stop Sign First
         if stop_needed.value:
+            print("@@@@@ STOP")
             fc.stop()
             time.sleep(5)
-            drive_forward(pwm, step_time_forward)
+            # ~ drive_forward(pwm, step_time_forward)
+            stop_needed.value = False
+            
 
         # If encounter obstacles, remapping and replanning
         if encounter_obstacle():
@@ -168,9 +179,15 @@ def run(stop_needed, start_state, goal_state):
 
             # Mapping
             curr_map_grid = mapping.update_map(curr_map_grid, current_state[0], current_state[1], current_state[2])
-
+            
+            # ~ plt.imshow(np.rot90(np.fliplr(curr_map_grid), k=1), origin='lower')
+            
+            print("@@@@@ Map", curr_map_grid)
             # Plan a new path
-            path = planner.a_star(curr_map_grid, [vehicle_x, vehicle_y], goal_state)
+            path = planner.a_star(curr_map_grid, [current_state[0], current_state[1]], goal_state)
+            print("@@@@@ Path:", path)
+            path.pop(0)
+            fc.servo.set_angle(0)
 
         # Move the car to the next waypoint
         next_position = path.pop(0)
@@ -179,4 +196,5 @@ def run(stop_needed, start_state, goal_state):
         # Update the current state
         vehicle_x, vehicle_y, vehicle_theta = new_state
         print(f"Current State: ({vehicle_x}, {vehicle_y}, {vehicle_theta})")
+        
 # ===================================

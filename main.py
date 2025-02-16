@@ -1,6 +1,7 @@
 import multiprocessing
 import time
 import argparse
+import picar_4wd as fc
 
 # ===== Import our modules =====
 import detect
@@ -8,6 +9,9 @@ import mapping
 import planner
 import control
 
+def parse_list(arg):
+    return [int(x) for x in arg.strip('[]').split(',')]
+    
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -15,12 +19,14 @@ if __name__ == "__main__":
         '--start',
         help='Start position of the car. List of 3 integers: [x, y, theta]',
         required=False,
-        default=[0,0,0])
+        default=[0,0,0],
+        type=parse_list)
     parser.add_argument(
         '--goal', 
         help='Goal position of the car. List of 2 integers: [x, y]',
         required=False,
-        default=[100, 0])
+        default=[100, 0],
+        type=parse_list)
     args = parser.parse_args()
 
     start_state = args.start
@@ -56,3 +62,9 @@ if __name__ == "__main__":
             time.sleep(1)  # Keep main.py running
     except KeyboardInterrupt:
         print("\nCtrl+C detected! Exiting...")
+        fc.stop()
+        p1.terminate()
+        p2.terminate()
+        p1.join()
+        p2.join()
+        print("Finish!!!")
