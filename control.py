@@ -149,7 +149,7 @@ def run(stop_needed, start_state, goal_state):
     vehicle_x, vehicle_y, vehicle_theta = start_state
 
     # Initialize the path
-    path = planner.a_star(curr_map_grid, [vehicle_x, vehicle_y], goal_state)
+    path = planner.a_star(curr_map_grid, [vehicle_x, vehicle_y], goal_state[0])
 
     # Start driving the car
     while True:
@@ -184,7 +184,7 @@ def run(stop_needed, start_state, goal_state):
             
             print("@@@@@ Map", curr_map_grid)
             # Plan a new path
-            path = planner.a_star(curr_map_grid, [current_state[0], current_state[1]], goal_state)
+            path = planner.a_star(curr_map_grid, [current_state[0], current_state[1]], goal_state[0])
             print("@@@@@ Path:", path)
             path.pop(0)
             fc.servo.set_angle(0)
@@ -196,5 +196,55 @@ def run(stop_needed, start_state, goal_state):
         # Update the current state
         vehicle_x, vehicle_y, vehicle_theta = new_state
         print(f"Current State: ({vehicle_x}, {vehicle_y}, {vehicle_theta})")
-        
+    
+    print("====================================")   
+    path = planner.a_star(curr_map_grid, [current_state[0], current_state[1]], goal_state[1])
+    print("@@@@@ Path:", path)
+    path.pop(0)
+    fc.servo.set_angle(0)
+    while True:
+        current_state = [vehicle_x, vehicle_y, vehicle_theta]
+        # If path is empty, we have reached the goal
+        if not path:
+            print("Reached the goal!")
+            fc.stop()
+            break
+
+        # Check Stop Sign First
+        if stop_needed.value:
+            print("@@@@@ STOP")
+            fc.stop()
+            time.sleep(5)
+            # ~ drive_forward(pwm, step_time_forward)
+            stop_needed.value = False
+            
+
+        # If encounter obstacles, remapping and replanning
+        if encounter_obstacle():
+            print("Obstacle detected!")
+            
+            # Stop the car
+            fc.stop()
+            time.sleep(0.1)
+
+            # Mapping
+            curr_map_grid = mapping.update_map(curr_map_grid, current_state[0], current_state[1], current_state[2])
+            
+            # ~ plt.imshow(np.rot90(np.fliplr(curr_map_grid), k=1), origin='lower')
+            
+            print("@@@@@ Map", curr_map_grid)
+            # Plan a new path
+            path = planner.a_star(curr_map_grid, [current_state[0], current_state[1]], goal_state[1])
+            print("@@@@@ Path:", path)
+            path.pop(0)
+            fc.servo.set_angle(0)
+
+        # Move the car to the next waypoint
+        next_position = path.pop(0)
+        new_state = navigate_to_waypoint(current_state, next_position)
+
+        # Update the current state
+        vehicle_x, vehicle_y, vehicle_theta = new_state
+        print(f"Current State: ({vehicle_x}, {vehicle_y}, {vehicle_theta})")
+        print("====================================")   
 # ===================================
