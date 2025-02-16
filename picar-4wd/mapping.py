@@ -133,7 +133,7 @@ def update_map(curr_map_grid, vehicle_x, vehicle_y, vehicle_theta):
 
     obstacle_positions = scan_obstacles(vehicle_x, vehicle_y, vehicle_theta)  # scan
     connect_obstacles(map_grid, obstacle_positions, vehicle_x, vehicle_y, angle_threshold=10, max_distance=10)  # connect
-    map_grid = expand_obstacles(map_grid, radius=2)  # expand region
+    map_grid = expand_obstacles(map_grid, radius=4)  # expand region
     
     #===== New Added =====
     # Combine two maps using element-wise OR

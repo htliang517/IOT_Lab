@@ -12,5 +12,5 @@ mapping:
 
 control:
   pwm: 5                    # Default 5
-  stepTime_turn45: 0.8    # Seconds to turn 45 degrees
+  stepTime_turn45: 0.9    # Seconds to turn 45 degrees
   stepTime_forward: 0.18   # Seconds to move forward

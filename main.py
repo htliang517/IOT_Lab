@@ -22,21 +22,28 @@ if __name__ == "__main__":
         default=[0,0,0],
         type=parse_list)
     parser.add_argument(
-        '--goal', 
+        '--goal1', 
         help='Goal position of the car. List of 2 integers: [x, y]',
         required=False,
-        default=[[100, 0], [200,0]],
+        default=[100, 0],
+        type=parse_list)
+    parser.add_argument(
+        '--goal2', 
+        help='Goal position of the car. List of 2 integers: [x, y]',
+        required=False,
+        default=[100, 0],
         type=parse_list)
     args = parser.parse_args()
 
     start_state = args.start
-    goal_state = args.goal
+    goal_state1 = args.goal1
+    goal_state2 = args.goal2
     
     # ===== Setup and start processes - PLAN 1 =====
     manager = multiprocessing.Manager()
     stop_needed = manager.Value('b', False)     # Boolean
     p1 = multiprocessing.Process(target=detect.run, args=(stop_needed,), daemon=True)
-    p2 = multiprocessing.Process(target=control.run, args=(stop_needed, start_state, goal_state), daemon=True)
+    p2 = multiprocessing.Process(target=control.run, args=(stop_needed, start_state, goal_state1, goal_state2), daemon=True)
     p1.start()
     p2.start()
 
